@@ -166,14 +166,19 @@ def measure_image(b64_string: str, height_cm: float = DEFAULT_HEIGHT_CM,
         raise ValueError("Impossibile decodificare l'immagine.")
 
     bbox = find_object_bbox(img)
+    auto_detected = True
+    img_h, img_w = img.shape[:2]
+
     if bbox is None:
-        raise ValueError(
-            "Nessun oggetto rilevato. Assicurati che l'oggetto sia su "
-            "uno sfondo contrastante e ben illuminato."
-        )
+        # Provide a default bounding box in the center (50% of the image)
+        auto_detected = False
+        default_w = img_w // 2
+        default_h = img_h // 2
+        default_x = (img_w - default_w) // 2
+        default_y = (img_h - default_h) // 2
+        bbox = (default_x, default_y, default_w, default_h)
 
     _, _, w_px, h_px = bbox
-    img_h, img_w = img.shape[:2]
 
     px_per_cm_h, px_per_cm_v = compute_px_per_cm(
         img_w, img_h, height_cm, h_fov_deg
@@ -201,4 +206,5 @@ def measure_image(b64_string: str, height_cm: float = DEFAULT_HEIGHT_CM,
         "img_h": img_h,
         "px_per_cm_h": round(px_per_cm_h, 4),
         "px_per_cm_v": round(px_per_cm_v, 4),
+        "auto_detected": auto_detected,
     }

@@ -259,6 +259,11 @@ async function measure() {
 
     if (data.error) { showToast(data.error); return; }
 
+    if (data.auto_detected === false) {
+      showToast('⚠️ Nessun oggetto rilevato in automatico. Regola il riquadro manualmente.', 'warn');
+      setEditorMode(true);
+    }
+
     // Store editor data for interactive editing
     editorData = {
       bbox: { x: data.bbox[0], y: data.bbox[1], w: data.bbox[2], h: data.bbox[3] },
