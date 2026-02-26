@@ -1,0 +1,828 @@
+/* ── Reset & Base ───────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #0d0d0f;
+  --surface: #161619;
+  --surface2: #1e1e23;
+  --gold: #d4a853;
+  --gold-dim: #9c7a3a;
+  --text: #e8e8e8;
+  --muted: #888;
+  --danger: #e05959;
+  --success: #4caf77;
+  --radius: 14px;
+  --transition: 0.25s ease;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ── Header ─────────────────────────────────────────────────── */
+header {
+  width: 100%;
+  padding: 1.2rem 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-bottom: 1px solid rgba(212, 168, 83, 0.15);
+  background: var(--surface);
+}
+
+header .logo-icon {
+  width: 36px;
+  height: 36px;
+  background: var(--gold);
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-size: 1.1rem;
+}
+
+header h1 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--gold);
+}
+
+/* ── Main layout ─────────────────────────────────────────────── */
+main {
+  width: 100%;
+  max-width: 900px;
+  padding: 2rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* ── Cards ───────────────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius);
+  padding: 1.4rem 1.6rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--gold), transparent);
+  opacity: 0.5;
+}
+
+.card h2 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--gold);
+  margin-bottom: 1rem;
+}
+
+/* ── Guide steps ─────────────────────────────────────────────── */
+.guide-steps {
+  list-style: none;
+  counter-reset: step;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.guide-steps li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  padding: 0.7rem 0.9rem;
+  background: var(--surface2);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  transition: border-color var(--transition);
+}
+
+.guide-steps li:hover {
+  border-color: rgba(212, 168, 83, 0.25);
+}
+
+.step-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  background: rgba(212, 168, 83, 0.08);
+  border-radius: 8px;
+}
+
+.guide-steps li div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.guide-steps li strong {
+  font-size: 0.92rem;
+  color: var(--text);
+}
+
+.step-desc {
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+/* ── Tab bar ─────────────────────────────────────────────────── */
+.tab-bar {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1.2rem;
+  background: var(--surface2);
+  border-radius: 10px;
+  padding: 4px;
+}
+
+.tab {
+  flex: 1;
+  padding: 0.6rem 1rem;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  letter-spacing: 0.02em;
+}
+
+.tab.active {
+  background: rgba(212, 168, 83, 0.15);
+  color: var(--gold);
+}
+
+.tab:hover:not(.active) {
+  color: var(--text);
+}
+
+/* ── Tab panels ──────────────────────────────────────────────── */
+.tab-panel {
+  display: none;
+}
+
+.tab-panel.active {
+  display: block;
+}
+
+/* ── Drop zone (file upload) ────────────────────────────────── */
+.drop-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 2.5rem 1.5rem;
+  border: 2px dashed rgba(212, 168, 83, 0.25);
+  border-radius: 12px;
+  background: rgba(212, 168, 83, 0.03);
+  cursor: pointer;
+  transition: var(--transition);
+  text-align: center;
+}
+
+.drop-zone:hover,
+.drop-zone.drag-over {
+  border-color: var(--gold);
+  background: rgba(212, 168, 83, 0.07);
+}
+
+.drop-icon {
+  font-size: 2.2rem;
+}
+
+.drop-text {
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.drop-text strong {
+  color: var(--gold);
+}
+
+.drop-hint {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.drop-zone input[type="file"] {
+  display: none;
+}
+
+/* ── Image preview ──────────────────────────────────────────── */
+.preview-wrapper {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #000;
+}
+
+.preview-img {
+  width: 100%;
+  max-height: 420px;
+  object-fit: contain;
+  display: block;
+}
+
+.btn-remove {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.7);
+  color: var(--danger);
+  font-size: 1rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(224, 89, 89, 0.3);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-remove:hover {
+  background: rgba(224, 89, 89, 0.2);
+  border-color: var(--danger);
+}
+
+/* ── Camera section ──────────────────────────────────────────── */
+.camera-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/9;
+  background: #000;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+#video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Guide frame overlay */
+.guide-frame {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 55%;
+  height: 70%;
+  pointer-events: none;
+}
+
+.guide-frame::before,
+.guide-frame::after,
+.guide-frame .corner-br,
+.guide-frame .corner-bl {
+  content: '';
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-color: var(--gold);
+  border-style: solid;
+  opacity: 0.85;
+}
+
+.guide-frame::before {
+  top: 0;
+  left: 0;
+  border-width: 3px 0 0 3px;
+}
+
+.guide-frame::after {
+  top: 0;
+  right: 0;
+  border-width: 3px 3px 0 0;
+}
+
+.guide-frame .corner-br {
+  bottom: 0;
+  right: 0;
+  border-width: 0 3px 3px 0;
+}
+
+.guide-frame .corner-bl {
+  bottom: 0;
+  left: 0;
+  border-width: 0 0 3px 3px;
+}
+
+/* Scanning line */
+.guide-frame .scan-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  animation: scan 2.4s ease-in-out infinite;
+  opacity: 0.6;
+}
+
+@keyframes scan {
+  0% {
+    top: 0%;
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 0.6;
+  }
+
+  90% {
+    opacity: 0.6;
+  }
+
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
+}
+
+/* Camera placeholder */
+.cam-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  background: var(--surface2);
+}
+
+.cam-placeholder .cam-icon {
+  font-size: 2.5rem;
+}
+
+/* Flash */
+.flash {
+  position: absolute;
+  inset: 0;
+  background: white;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.05s;
+}
+
+.flash.active {
+  opacity: 0.6;
+}
+
+/* Canvas (hidden) */
+canvas {
+  display: none;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────── */
+.btn {
+  padding: 0.65rem 1.4rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--gold);
+  color: #000;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #e8bb65;
+  transform: translateY(-1px);
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid rgba(212, 168, 83, 0.4);
+  color: var(--gold);
+}
+
+.btn-outline:hover:not(:disabled) {
+  border-color: var(--gold);
+  background: rgba(212, 168, 83, 0.07);
+}
+
+/* ── Height input bar (inline in card) ───────────────────────── */
+.height-input-bar {
+  margin-top: 1.2rem;
+  padding: 1rem 1.1rem;
+  background: var(--surface2);
+  border-radius: 10px;
+  border: 1px solid rgba(212, 168, 83, 0.12);
+}
+
+.height-input-bar label {
+  font-size: 0.82rem;
+  color: var(--gold);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.3rem;
+  display: block;
+}
+
+.height-input-bar .input-with-unit {
+  max-width: 200px;
+  margin-top: 0.4rem;
+}
+
+.height-input-bar .hint {
+  display: block;
+  margin-top: 0.4rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.action-bar {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* Spinner */
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  border-top-color: #000;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: none;
+}
+
+.show-spin .spinner {
+  display: block;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Settings panel ──────────────────────────────────────────── */
+.settings-details {
+  cursor: pointer;
+}
+
+.settings-details::before {
+  display: none;
+}
+
+/* hide card gold line on summary */
+.settings-toggle {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--gold);
+  list-style: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.settings-toggle::-webkit-details-marker {
+  display: none;
+}
+
+.settings-toggle::after {
+  content: '▸';
+  transition: transform var(--transition);
+}
+
+.settings-details[open] .settings-toggle::after {
+  transform: rotate(90deg);
+}
+
+.settings-body {
+  margin-top: 1.2rem;
+}
+
+.setting-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.setting-row .input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: 1;
+  min-width: 180px;
+}
+
+.setting-row label {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.input-with-unit {
+  display: flex;
+  gap: 0;
+}
+
+.input-with-unit input {
+  flex: 1;
+  padding: 0.6rem 0.85rem;
+  border-radius: 8px 0 0 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-right: none;
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color var(--transition);
+}
+
+.input-with-unit input:focus {
+  border-color: var(--gold);
+}
+
+.unit-badge {
+  padding: 0.6rem 0.7rem;
+  background: rgba(212, 168, 83, 0.12);
+  color: var(--gold);
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 0 8px 8px 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: none;
+  display: grid;
+  place-items: center;
+  min-width: 38px;
+}
+
+.hint {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+/* ── Shooting mode description ───────────────────────────────── */
+.mode-desc {
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin-top: 0.8rem;
+  text-align: center;
+  font-style: italic;
+}
+
+/* ── Interactive Editor ───────────────────────────────────────── */
+.editor-wrapper {
+  position: relative;
+  margin-bottom: 0.6rem;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(212, 168, 83, 0.2);
+  background: #000;
+}
+
+.editor-bg {
+  width: 100%;
+  display: block;
+  object-fit: contain;
+  max-height: 500px;
+}
+
+.editor-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.editor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.btn-sm {
+  padding: 0.4rem 0.9rem;
+  font-size: 0.8rem;
+}
+
+/* ── Result panel ────────────────────────────────────────────── */
+#result-card {
+  display: none;
+}
+
+#result-card.visible {
+  display: block;
+}
+
+.dim-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.dim-box {
+  background: var(--surface2);
+  border-radius: 10px;
+  padding: 1.1rem 1.4rem;
+  text-align: center;
+  border: 1px solid rgba(212, 168, 83, 0.12);
+  animation: pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes pop {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.dim-box .label {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 0.4rem;
+}
+
+.dim-box .value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--gold);
+  line-height: 1;
+}
+
+.dim-box .unit {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-top: 0.2rem;
+}
+
+.px-hint {
+  margin-top: 0.8rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* ── Toast ───────────────────────────────────────────────────── */
+#toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(120%);
+  background: #2a1515;
+  border: 1px solid rgba(224, 89, 89, 0.4);
+  color: var(--danger);
+  padding: 0.75rem 1.4rem;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  transition: transform 0.35s ease;
+  z-index: 999;
+  max-width: 90%;
+  text-align: center;
+}
+
+#toast.show {
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  main {
+    padding: 1.2rem;
+    gap: 1.2rem;
+  }
+
+  .card {
+    padding: 1.2rem;
+  }
+
+  .tab {
+    padding: 0.8rem 1rem;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 540px) {
+  header h1 {
+    font-size: 1.05rem;
+  }
+
+  main {
+    padding: 1rem;
+    gap: 1rem;
+  }
+
+  .card {
+    padding: 1rem;
+  }
+
+  .dim-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .setting-row {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .setting-row .input-group,
+  .height-input-bar .input-group {
+    width: 100%;
+  }
+
+  .height-input-bar .input-with-unit {
+    max-width: 100%;
+  }
+
+  .action-bar {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .btn {
+    width: 100%;
+    justify-content: center;
+    padding: 0.85rem 1.4rem;
+    font-size: 1rem;
+  }
+
+  .btn-sm {
+    width: 100%;
+    justify-content: center;
+    padding: 0.6rem 0.9rem;
+    font-size: 0.9rem;
+  }
+
+  .drop-zone {
+    padding: 2rem 1rem;
+  }
+
+  .input-with-unit input {
+    padding: 0.75rem;
+    font-size: 1rem;
+  }
+
+  .unit-badge {
+    padding: 0.75rem;
+  }
+}

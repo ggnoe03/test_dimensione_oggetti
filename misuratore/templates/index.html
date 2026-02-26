@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Misuratore Oggetti — ObjectMeter</title>
+  <meta name="description" content="Inquadra un oggetto a terra e ottieni le sue dimensioni reali in cm." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+
+<body>
+
+  <!-- ── Header ─────────────────────────────────────────────── -->
+  <header>
+    <div class="logo-icon">📏</div>
+    <h1>ObjectMeter</h1>
+  </header>
+
+  <!-- ── Main ──────────────────────────────────────────────────── -->
+  <main>
+
+    <!-- Shooting mode toggle -->
+    <div class="card">
+      <h2>🎯 Modalità di scatto</h2>
+      <div class="tab-bar" id="shooting-mode-bar">
+        <button class="tab active" id="mode-topdown">⬇️ Dall'alto</button>
+        <button class="tab" id="mode-frontal">📷 Frontale</button>
+      </div>
+      <p class="mode-desc" id="mode-desc">Telefono puntato verso il basso, oggetto a terra</p>
+    </div>
+
+    <!-- Step-by-step guide -->
+    <div class="card guide-card">
+      <h2>📋 Come usare</h2>
+      <ol class="guide-steps" id="guide-topdown">
+        <li>
+          <span class="step-icon">🧍</span>
+          <div>
+            <strong>Mettiti in piedi</strong>
+            <span class="step-desc">Tieni il telefono davanti alla faccia, ad altezza occhi</span>
+          </div>
+        </li>
+        <li>
+          <span class="step-icon">⬇️</span>
+          <div>
+            <strong>Punta verso il basso</strong>
+            <span class="step-desc">Inquadra l'oggetto a terra — assicurati che si veda anche il pavimento
+              attorno</span>
+          </div>
+        </li>
+        <li>
+          <span class="step-icon">📐</span>
+          <div>
+            <strong>Scatta e misura</strong>
+            <span class="step-desc">Scatta col telefono, poi carica la foto qui — oppure usa la fotocamera live</span>
+          </div>
+        </li>
+      </ol>
+      <ol class="guide-steps" id="guide-frontal" style="display:none;">
+        <li>
+          <span class="step-icon">📏</span>
+          <div>
+            <strong>Misura la distanza</strong>
+            <span class="step-desc">Misura (o stima) la distanza tra te e l'oggetto da misurare</span>
+          </div>
+        </li>
+        <li>
+          <span class="step-icon">📷</span>
+          <div>
+            <strong>Punta verso l'oggetto</strong>
+            <span class="step-desc">Inquadra l'oggetto frontalmente — lo sfondo deve contrastare</span>
+          </div>
+        </li>
+        <li>
+          <span class="step-icon">📐</span>
+          <div>
+            <strong>Scatta e misura</strong>
+            <span class="step-desc">Scatta col telefono, poi carica la foto qui — oppure usa la fotocamera live</span>
+          </div>
+        </li>
+      </ol>
+    </div>
+
+    <!-- Input mode card -->
+    <div class="card">
+      <!-- Tab switcher -->
+      <div class="tab-bar">
+        <button class="tab active" data-tab="upload" id="tab-upload">📁 Carica foto</button>
+        <button class="tab" data-tab="camera" id="tab-camera">🎥 Fotocamera live</button>
+      </div>
+
+      <!-- Upload panel -->
+      <div id="panel-upload" class="tab-panel active">
+        <div id="drop-zone" class="drop-zone">
+          <span class="drop-icon">📁</span>
+          <span class="drop-text">Trascina qui la foto oppure <strong>clicca per selezionare</strong></span>
+          <span class="drop-hint">JPG, PNG — scattata col telefono in piedi</span>
+          <input id="file-input" type="file" accept="image/*" />
+        </div>
+        <div id="preview-wrapper" class="preview-wrapper" style="display:none;">
+          <img id="preview-img" class="preview-img" alt="Anteprima" />
+          <button id="btn-remove-img" class="btn btn-remove" title="Rimuovi">✕</button>
+        </div>
+      </div>
+
+      <!-- Camera panel -->
+      <div id="panel-camera" class="tab-panel">
+        <div class="camera-wrapper">
+          <div id="cam-placeholder" class="cam-placeholder">
+            <span class="cam-icon">📷</span>
+            <span>Clicca "Avvia fotocamera" per cominciare</span>
+          </div>
+          <video id="video" autoplay playsinline muted></video>
+          <div class="guide-frame" aria-hidden="true">
+            <div class="corner-br"></div>
+            <div class="corner-bl"></div>
+            <div class="scan-line"></div>
+          </div>
+          <div id="flash" class="flash"></div>
+        </div>
+        <canvas id="canvas"></canvas>
+        <div class="action-bar" style="margin-top:1rem;">
+          <button id="btn-start" class="btn btn-outline">▶ Avvia fotocamera</button>
+        </div>
+      </div>
+
+      <!-- Person height input (always visible) -->
+      <div class="height-input-bar">
+        <div class="input-group" style="margin:0;">
+          <label for="input-person-height">🧍 La tua altezza</label>
+          <div class="input-with-unit">
+            <input id="input-person-height" type="number" min="100" max="220" step="1" value="170" />
+            <span class="unit-badge">cm</span>
+          </div>
+          <span class="hint" id="phone-height-hint">📱 Altezza telefono stimata: 159 cm</span>
+        </div>
+      </div>
+
+      <!-- Frontal: distance to object input -->
+      <div class="height-input-bar" id="input-bar-frontal" style="display:none;">
+        <div class="input-group" style="margin:0;">
+          <label for="input-distance">📏 Distanza orizzontale dall'oggetto</label>
+          <div class="input-with-unit">
+            <input id="input-distance" type="number" min="10" max="2000" step="1" value="100" />
+            <span class="unit-badge">cm</span>
+          </div>
+          <span class="hint" id="frontal-dist-hint">📐 Distanza reale camera→oggetto: 188 cm</span>
+        </div>
+      </div>
+
+      <!-- Shared measure button -->
+      <div class="action-bar" style="margin-top:1rem;">
+        <button id="btn-measure" class="btn btn-primary" disabled>
+          <div class="spinner"></div>
+          📐 Misura
+        </button>
+      </div>
+    </div>
+
+    <!-- Settings card (collapsible) - only FOV -->
+    <details class="card settings-details">
+      <summary class="settings-toggle">⚙️ Impostazioni avanzate</summary>
+      <div class="settings-body">
+        <div class="setting-row">
+          <div class="input-group">
+            <label for="input-fov">Campo visivo orizzontale (FOV)</label>
+            <div class="input-with-unit">
+              <input id="input-fov" type="number" min="30" max="120" step="1" value="70" />
+              <span class="unit-badge">°</span>
+            </div>
+            <span class="hint">Predefinito: 70° (tipico smartphone)</span>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <!-- Results card -->
+    <div id="result-card" class="card">
+      <h2>📊 Dimensioni rilevate</h2>
+
+      <!-- Interactive image editor -->
+      <div class="editor-wrapper" id="editor-wrapper">
+        <img id="editor-bg" class="editor-bg" alt="Immagine originale" />
+        <canvas id="editor-canvas" class="editor-canvas"></canvas>
+      </div>
+      <div class="editor-toolbar">
+        <button id="btn-edit-toggle" class="btn btn-outline btn-sm">✏️ Modifica riquadro</button>
+        <span class="hint" id="edit-hint" style="display:none;">Trascina gli angoli o i lati per ridimensionare</span>
+      </div>
+
+      <div class="dim-grid">
+        <div class="dim-box">
+          <div class="label">Larghezza</div>
+          <div class="value" id="res-width">—</div>
+          <div class="unit">cm</div>
+        </div>
+        <div class="dim-box">
+          <div class="label">Altezza</div>
+          <div class="value" id="res-height">—</div>
+          <div class="unit">cm</div>
+        </div>
+      </div>
+      <p class="px-hint" id="res-px"></p>
+    </div>
+
+  </main>
+
+  <!-- ── Toast ──────────────────────────────────────────────────── -->
+  <div id="toast" role="alert">
+    <span id="toast-msg"></span>
+  </div>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+
+</html>
