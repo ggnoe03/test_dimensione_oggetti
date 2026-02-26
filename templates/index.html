@@ -5,7 +5,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ObjectMeter — Misura con AI</title>
-  <meta name="description" content="Carica una foto, seleziona un oggetto e ottieni la dimensione reale grazie a YOLOv8." />
+  <meta name="description"
+    content="Carica una foto, seleziona un oggetto e ottieni la dimensione reale grazie a YOLOv8." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -32,7 +33,8 @@
           <span class="step-icon">📸</span>
           <div>
             <strong>Carica o scatta una foto</strong>
-            <span class="step-desc">Assicurati che nella scena ci sia almeno un oggetto comune (persona, bottiglia, sedia…)</span>
+            <span class="step-desc">Assicurati che nella scena ci sia almeno un oggetto comune (persona, bottiglia,
+              sedia…)</span>
           </div>
         </li>
         <li>
@@ -46,7 +48,8 @@
           <span class="step-icon">🤖</span>
           <div>
             <strong>L'AI fa il resto</strong>
-            <span class="step-desc">YOLOv8 rileva oggetti noti, calcola il rapporto pixel/cm e ti dà le dimensioni reali</span>
+            <span class="step-desc">YOLOv8 rileva oggetti noti, calcola il rapporto pixel/cm e ti dà le dimensioni
+              reali</span>
           </div>
         </li>
       </ol>
@@ -62,6 +65,11 @@
         <span class="drop-text">Trascina qui la foto oppure <strong>clicca per selezionare</strong></span>
         <span class="drop-hint">JPG, PNG — con almeno un oggetto di riferimento visibile</span>
         <input id="file-input" type="file" accept="image/*" />
+      </div>
+
+      <div class="camera-action" id="camera-action-wrapper">
+        <span class="camera-or">— oppure —</span>
+        <button id="btn-camera" class="btn btn-outline">📷 Scatta una foto</button>
       </div>
 
       <!-- Canvas area (hidden until image loaded) -->
@@ -86,9 +94,24 @@
     <div id="result-card" class="card result-card">
       <h2>📊 Risultati</h2>
 
-      <!-- Annotated image -->
+      <!-- Annotated image (view mode) -->
       <div class="annotated-wrapper" id="annotated-wrapper" style="display:none;">
         <img id="annotated-img" class="annotated-img" alt="Immagine annotata" />
+      </div>
+
+      <!-- Edit mode canvas (hidden by default) -->
+      <div class="edit-canvas-wrapper" id="edit-canvas-wrapper" style="display:none;">
+        <canvas id="edit-canvas"></canvas>
+        <div class="edit-hint">↔️ Trascina per spostare · 🔲 Trascina gli angoli per ridimensionare</div>
+      </div>
+
+      <!-- Edit action buttons -->
+      <div class="edit-action-bar" id="edit-action-bar" style="display:none;">
+        <button id="btn-save-edit" class="btn btn-primary">
+          <div class="spinner"></div>
+          💾 Salva modifica
+        </button>
+        <button id="btn-cancel-edit" class="btn btn-outline">❌ Annulla</button>
       </div>
 
       <!-- Detected reference info -->
@@ -110,6 +133,11 @@
         </div>
       </div>
 
+      <!-- Edit button -->
+      <div class="edit-bar" id="edit-bar" style="display:none;">
+        <button id="btn-edit" class="btn btn-outline">✏️ Modifica selezione</button>
+      </div>
+
       <!-- All detections list -->
       <details class="detections-details" id="detections-details" style="display:none;">
         <summary class="detections-toggle">🔍 Tutti gli oggetti rilevati</summary>
@@ -118,6 +146,18 @@
     </div>
 
   </main>
+
+  <!-- ── Camera Modal ────────────────────────────────────────────── -->
+  <div id="camera-modal" class="camera-modal" style="display:none;">
+    <div class="camera-container">
+      <video id="camera-stream" autoplay playsinline></video>
+      <div class="camera-controls">
+        <button id="btn-take-photo" class="btn-capture">🔴 Scatta</button>
+        <button id="btn-close-camera" class="btn btn-outline" style="color: white; border-color: white;">❌
+          Chiudi</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ── Toast ──────────────────────────────────────────────────── -->
   <div id="toast" role="alert">

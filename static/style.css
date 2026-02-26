@@ -210,6 +210,29 @@ main {
   display: none;
 }
 
+/* ── Camera Action ───────────────────────────────────────────── */
+.camera-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.camera-or {
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+#btn-camera {
+  width: 100%;
+  justify-content: center;
+  background: rgba(212, 168, 83, 0.05);
+}
+
 /* ── Canvas wrapper ──────────────────────────────────────────── */
 .canvas-wrapper {
   position: relative;
@@ -381,6 +404,7 @@ main {
     transform: scale(0.8);
     opacity: 0;
   }
+
   to {
     transform: scale(1);
     opacity: 1;
@@ -461,6 +485,52 @@ main {
   font-weight: 600;
 }
 
+/* ── Edit mode ──────────────────────────────────────────────── */
+.edit-canvas-wrapper {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid var(--cyan);
+  background: #000;
+  margin-bottom: 1rem;
+}
+
+#edit-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  cursor: crosshair;
+}
+
+.edit-hint {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0.5rem 1rem;
+  background: rgba(56, 189, 248, 0.15);
+  color: var(--cyan);
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-align: center;
+  backdrop-filter: blur(8px);
+  border-top: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.edit-action-bar {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.edit-bar {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
 /* ── Toast ───────────────────────────────────────────────────── */
 #toast {
   position: fixed;
@@ -483,12 +553,72 @@ main {
   transform: translateX(-50%) translateY(0);
 }
 
+/* ── Camera Modal ────────────────────────────────────────────── */
+.camera-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.9);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.camera-container {
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+#camera-stream {
+  width: 100%;
+  border-radius: var(--radius);
+  background: #000;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  transform: scaleX(-1);
+  /* Mirror per selfie cam se presente, ma ok anche per env */
+}
+
+.camera-controls {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  align-items: center;
+}
+
+.btn-capture {
+  padding: 1rem 2rem;
+  border-radius: 50px;
+  background: #e02424;
+  color: white;
+  border: none;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(224, 36, 36, 0.4);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-capture:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(224, 36, 36, 0.6);
+}
+
+.btn-capture:active {
+  transform: scale(0.95);
+}
+
 /* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 768px) {
   main {
     padding: 1.2rem;
     gap: 1.2rem;
   }
+
   .card {
     padding: 1.2rem;
   }
@@ -498,22 +628,47 @@ main {
   header h1 {
     font-size: 1.05rem;
   }
+
   main {
     padding: 1rem;
     gap: 1rem;
   }
+
   .card {
     padding: 1rem;
   }
+
   .dim-grid {
     grid-template-columns: 1fr;
     gap: 0.75rem;
   }
+
   .action-bar {
     flex-direction: column;
     width: 100%;
   }
+
   .action-bar .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .edit-action-bar {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .edit-action-bar .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .edit-bar {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .edit-bar .btn {
     width: 100%;
     justify-content: center;
   }

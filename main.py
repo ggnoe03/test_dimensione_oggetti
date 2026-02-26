@@ -13,7 +13,11 @@ Flusso:
 
 import base64
 import math
+import os
+import uuid
+from datetime import datetime
 from io import BytesIO
+from pathlib import Path
 
 import cv2
 import numpy as np
@@ -22,12 +26,17 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
+from typing import Optional
 from ultralytics import YOLO
 
 # ── App setup ────────────────────────────────────────────────────
 app = FastAPI(title="ObjectMeter")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
+# ── Uploads directory ────────────────────────────────────────────
+UPLOADS_DIR = Path("uploads")
+UPLOADS_DIR.mkdir(exist_ok=True)
 
 # ── Load YOLO model (scaricato automaticamente al primo avvio) ───
 model = YOLO("yolov8n.pt")
@@ -105,11 +114,19 @@ REFERENCE_SIZES = {
 }
 
 
-# ── Request model ────────────────────────────────────────────────
+# ── Request models ───────────────────────────────────────────────
 class MeasureRequest(BaseModel):
     image: str             # base64-encoded image (con o senza prefisso data URI)
     bbox_x: float          # coordinate del bounding box disegnato dall'utente
     bbox_y: float          # (in pixel, rispetto all'immagine originale)
+    bbox_w: float
+    bbox_h: float
+
+
+class RemeasureRequest(BaseModel):
+    saved_path: str        # percorso dell'immagine salvata in uploads/
+    bbox_x: float          # nuove coordinate del bounding box modificato
+    bbox_y: float
     bbox_w: float
     bbox_h: float
 
@@ -145,7 +162,7 @@ def encode_image(img: np.ndarray) -> str:
 
 
 def draw_detections(img: np.ndarray, detections: list, user_bbox: tuple,
-                    best_ref: dict | None) -> np.ndarray:
+                    best_ref: Optional[dict]) -> np.ndarray:
     """
     Disegna sull'immagine:
     - Il bbox dell'utente (oro)
@@ -200,6 +217,11 @@ async def measure(req: MeasureRequest):
     if img is None:
         return {"error": "Impossibile decodificare l'immagine."}
 
+    # 1b. Salva immagine su disco
+    filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}.jpg"
+    saved_path = str(UPLOADS_DIR / filename)
+    cv2.imwrite(saved_path, img)
+
     img_h, img_w = img.shape[:2]
     user_bbox = (req.bbox_x, req.bbox_y, req.bbox_w, req.bbox_h)
 
@@ -229,6 +251,7 @@ async def measure(req: MeasureRequest):
                      "Assicurati che nella foto ci sia almeno un oggetto comune "
                      "(persona, bottiglia, laptop, sedia, ecc.).",
             "annotated_image": encode_image(annotated),
+            "saved_path": saved_path,
         }
 
     # 4. Trova l'oggetto di riferimento più vicino al bbox utente
@@ -263,10 +286,104 @@ async def measure(req: MeasureRequest):
         ],
         "annotated_image": encode_image(annotated),
         "px_per_cm": round(px_per_cm, 4),
+        "saved_path": saved_path,
+    }
+
+
+def _center_inside_bbox(det_bbox, user_bbox):
+    """Controlla se il centro di det_bbox cade dentro user_bbox."""
+    cx, cy = bbox_center(*det_bbox)
+    ux, uy, uw, uh = user_bbox
+    return ux <= cx <= ux + uw and uy <= cy <= uy + uh
+
+
+@app.post("/remeasure")
+async def remeasure(req: RemeasureRequest):
+    # 1. Carica immagine dal disco
+    if not os.path.isfile(req.saved_path):
+        return {"error": "Immagine non trovata sul server."}
+
+    img = cv2.imread(req.saved_path)
+    if img is None:
+        return {"error": "Impossibile leggere l'immagine salvata."}
+
+    user_bbox = (req.bbox_x, req.bbox_y, req.bbox_w, req.bbox_h)
+
+    # 2. Esegui YOLO detection
+    results = model.predict(img, conf=0.3, verbose=False)
+
+    # 3. Filtra detections: solo oggetti nel dizionario E il cui centro
+    #    cade dentro il bbox utente
+    detections = []
+    for r in results:
+        for box in r.boxes:
+            cls_id = int(box.cls[0])
+            cls_name = model.names[cls_id]
+            if cls_name in REFERENCE_SIZES:
+                x1, y1, x2, y2 = box.xyxy[0].tolist()
+                det_bbox = (x1, y1, x2 - x1, y2 - y1)
+                detections.append({
+                    "name": cls_name,
+                    "conf": float(box.conf[0]),
+                    "bbox": det_bbox,
+                    "ref": REFERENCE_SIZES[cls_name],
+                })
+
+    # Filtra: solo oggetti il cui centro cade nel riquadro utente
+    inside = [d for d in detections if _center_inside_bbox(d["bbox"], user_bbox)]
+
+    if not inside:
+        annotated = draw_detections(img, detections, user_bbox, None)
+        return {
+            "error": "Nessun oggetto presente nel riquadro selezionato.",
+            "annotated_image": encode_image(annotated),
+            "saved_path": req.saved_path,
+        }
+
+    # 4. Trova il riferimento più vicino tra TUTTI i detections (non solo inside)
+    if not detections:
+        annotated = draw_detections(img, [], user_bbox, None)
+        return {
+            "error": "Nessun oggetto di riferimento riconosciuto nella scena.",
+            "annotated_image": encode_image(annotated),
+            "saved_path": req.saved_path,
+        }
+
+    best_ref = min(detections, key=lambda d: distance_between_centers(user_bbox, d["bbox"]))
+
+    # 5. Calcola px/cm
+    ref_bbox_w = best_ref["bbox"][2]
+    ref_bbox_h = best_ref["bbox"][3]
+    ref_real_w = best_ref["ref"]["width"]
+    ref_real_h = best_ref["ref"]["height"]
+    px_per_cm_w = ref_bbox_w / ref_real_w
+    px_per_cm_h = ref_bbox_h / ref_real_h
+    px_per_cm = (px_per_cm_w + px_per_cm_h) / 2
+
+    # 6. Calcola dimensioni dell'oggetto dell'utente
+    user_w_cm = round(req.bbox_w / px_per_cm, 1)
+    user_h_cm = round(req.bbox_h / px_per_cm, 1)
+
+    # 7. Genera immagine annotata
+    annotated = draw_detections(img, detections, user_bbox, best_ref)
+
+    return {
+        "width_cm": user_w_cm,
+        "height_cm": user_h_cm,
+        "reference_object": best_ref["name"],
+        "reference_confidence": round(best_ref["conf"], 2),
+        "all_detections": [
+            {"name": d["name"], "confidence": round(d["conf"], 2)} for d in detections
+        ],
+        "annotated_image": encode_image(annotated),
+        "px_per_cm": round(px_per_cm, 4),
+        "saved_path": req.saved_path,
     }
 
 
 # ── Entry point ──────────────────────────────────────────────────
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    import os
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
