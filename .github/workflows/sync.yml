@@ -1,0 +1,20 @@
+name: Sync to Hugging Face Space
+
+on:
+  push:
+    branches: [main]
+  # Questo permette di avviare la sincronizzazione anche manualmente da GitHub
+  workflow_dispatch:
+
+jobs:
+  sync-to-hub:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Push to Hugging Face
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        # ⚠️ SOSTITUISCI I DATI NELLA RIGA QUI SOTTO ⚠️
+        run: git push --force https://Gabrielennn:$HF_TOKEN@huggingface.co/spaces/Gabrielennn/test_dimensione main
