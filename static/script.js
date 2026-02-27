@@ -15,6 +15,8 @@ let drawState = null;         // { startX, startY } durante il drag
 let userBbox = null;          // { x, y, w, h } in coordinate immagine
 let canvasScale = 1;          // rapporto canvas_display / image_real
 let savedImagePath = null;    // percorso immagine salvata dal backend
+let pxPerCm = null;           // ratio pixel/cm calcolato dal backend
+let canvasLocked = false;     // true dopo auto-detect, impedisce disegno manuale
 
 // ── Edit mode state ──
 let editMode = false;
@@ -104,8 +106,13 @@ function handleFile(file) {
       actionBar.style.display = 'flex';
       resultCard.classList.remove('visible');
       userBbox = null;
+      pxPerCm = null;
+      canvasLocked = false;
       btnMeasure.disabled = true;
+      btnMeasure.style.display = '';
+      mainCanvas.style.cursor = 'crosshair';
       exitEditMode();
+      autoDetect();
     };
     img.src = imageB64;
   };
@@ -118,6 +125,8 @@ btnClear.addEventListener('click', () => {
   imageB64 = null;
   userBbox = null;
   savedImagePath = null;
+  pxPerCm = null;
+  canvasLocked = false;
   fileInput.value = '';
   canvasWrapper.style.display = 'none';
   actionBar.style.display = 'none';
@@ -177,8 +186,13 @@ function takePhoto() {
     actionBar.style.display = 'flex';
     resultCard.classList.remove('visible');
     userBbox = null;
+    pxPerCm = null;
+    canvasLocked = false;
     btnMeasure.disabled = true;
+    btnMeasure.style.display = '';
+    mainCanvas.style.cursor = 'crosshair';
     exitEditMode();
+    autoDetect();
   };
   img.src = imageB64;
 
@@ -242,7 +256,7 @@ function drawCanvas() {
     ctx.lineWidth = 1;
     const fontSize = Math.max(14, Math.min(mainCanvas.width, mainCanvas.height) / 40);
     ctx.font = `600 ${fontSize}px Inter, sans-serif`;
-    const label = `${Math.round(w)} × ${Math.round(h)} px`;
+    const label = pxPerCm ? `${(w / pxPerCm).toFixed(1)} × ${(h / pxPerCm).toFixed(1)} cm` : `${Math.round(w)} × ${Math.round(h)} px`;
     const metrics = ctx.measureText(label);
     const lx = x + (w - metrics.width) / 2;
     const ly = y + h + fontSize + 8;
@@ -271,7 +285,7 @@ mainCanvas.addEventListener('mousedown', onDrawStart);
 mainCanvas.addEventListener('touchstart', onDrawStart, { passive: false });
 
 function onDrawStart(e) {
-  if (!loadedImage) return;
+  if (!loadedImage || canvasLocked) return;
   e.preventDefault();
   const pos = getCanvasPos(e);
   drawState = { startX: pos.x, startY: pos.y };
@@ -362,12 +376,94 @@ async function measure() {
       return;
     }
 
+    if (data.px_per_cm) {
+      pxPerCm = data.px_per_cm;
+    }
     showResults(data);
 
   } catch (e) {
     showToast('Errore di rete: ' + e.message);
   } finally {
     btnMeasure.disabled = false;
+    btnMeasure.classList.remove('show-spin');
+  }
+}
+
+/* ── Auto Detect — chiamato automaticamente al caricamento immagine ── */
+async function autoDetect() {
+  if (!imageB64) return;
+
+  btnMeasure.disabled = true;
+  btnMeasure.classList.add('show-spin');
+  canvasHint.textContent = '🔍 Rilevamento automatico in corso…';
+  canvasHint.classList.remove('hidden');
+
+  try {
+    const res = await fetch('/auto_detect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: imageB64 }),
+    });
+    const data = await res.json();
+
+    // Salva il path dell'immagine persistita
+    if (data.saved_path) {
+      savedImagePath = data.saved_path;
+    }
+
+    if (data.error) {
+      // Se c'è un bbox rilevato ma senza misure, mostralo comunque
+      if (data.bbox_x !== undefined) {
+        userBbox = {
+          x: data.bbox_x,
+          y: data.bbox_y,
+          w: data.bbox_w,
+          h: data.bbox_h,
+        };
+        drawCanvas();
+        btnMeasure.disabled = false;
+      }
+      showToast(data.error);
+      canvasHint.textContent = '✏️ Clicca e trascina per disegnare il rettangolo sull\'oggetto da misurare';
+      canvasHint.classList.add('hidden');
+      return;
+    }
+
+    // Imposta bbox auto-rilevato
+    userBbox = {
+      x: data.bbox_x,
+      y: data.bbox_y,
+      w: data.bbox_w,
+      h: data.bbox_h,
+    };
+
+    if (data.px_per_cm) {
+      pxPerCm = data.px_per_cm;
+    }
+
+    // Disegna il bbox sul canvas
+    drawCanvas();
+    canvasHint.classList.add('hidden');
+    canvasLocked = true;
+    mainCanvas.style.cursor = 'default';
+
+    // Nascondi il pulsante Misura (auto-detect lo sostituisce)
+    btnMeasure.style.display = 'none';
+
+    // Mostra i risultati
+    showResults(data);
+
+    // Carica immagine originale per l'editing
+    editOriginalImage = new Image();
+    editOriginalImage.src = imageB64;
+
+    btnMeasure.disabled = false;
+
+  } catch (e) {
+    showToast('Errore di rete: ' + e.message);
+    canvasHint.textContent = '✏️ Clicca e trascina per disegnare il rettangolo sull\'oggetto da misurare';
+    canvasHint.classList.add('hidden');
+  } finally {
     btnMeasure.classList.remove('show-spin');
   }
 }
@@ -515,7 +611,7 @@ function drawEditCanvas() {
   ctx.lineWidth = 1;
   const fontSize = Math.max(14, Math.min(editCanvas.width, editCanvas.height) / 40);
   ctx.font = `600 ${fontSize}px Inter, sans-serif`;
-  const label = `${Math.round(w)} × ${Math.round(h)} px`;
+  const label = pxPerCm ? `${(w / pxPerCm).toFixed(1)} × ${(h / pxPerCm).toFixed(1)} cm` : `${Math.round(w)} × ${Math.round(h)} px`;
   const metrics = ctx.measureText(label);
   const lx = x + (w - metrics.width) / 2;
   const ly = y + h + fontSize + 8;
@@ -691,7 +787,9 @@ async function saveEdit() {
       editBar.style.display = 'flex';
       return;
     }
-
+    if (data.px_per_cm) {
+      pxPerCm = data.px_per_cm;
+    }
     showResults(data);
 
   } catch (e) {

@@ -123,6 +123,10 @@ class MeasureRequest(BaseModel):
     bbox_h: float
 
 
+class AutoDetectRequest(BaseModel):
+    image: str             # base64-encoded image
+
+
 class RemeasureRequest(BaseModel):
     saved_path: str        # percorso dell'immagine salvata in uploads/
     bbox_x: float          # nuove coordinate del bounding box modificato
@@ -208,6 +212,112 @@ def draw_detections(img: np.ndarray, detections: list, user_bbox: tuple,
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
+
+
+@app.post("/auto_detect")
+async def auto_detect(req: AutoDetectRequest):
+    """Rileva automaticamente l'oggetto più grande in primo piano e ne calcola le dimensioni."""
+    # 1. Decodifica immagine
+    img = decode_image(req.image)
+    if img is None:
+        return {"error": "Impossibile decodificare l'immagine."}
+
+    # 1b. Salva immagine su disco
+    filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}.jpg"
+    saved_path = str(UPLOADS_DIR / filename)
+    cv2.imwrite(saved_path, img)
+
+    img_h, img_w = img.shape[:2]
+
+    # 2. Esegui YOLO detection
+    results = model.predict(img, conf=0.3, verbose=False)
+
+    # 3. Raccogli TUTTI gli oggetti rilevati
+    all_detections = []
+    for r in results:
+        for box in r.boxes:
+            cls_id = int(box.cls[0])
+            cls_name = model.names[cls_id]
+            x1, y1, x2, y2 = box.xyxy[0].tolist()
+            det = {
+                "name": cls_name,
+                "conf": float(box.conf[0]),
+                "bbox": (x1, y1, x2 - x1, y2 - y1),  # (x, y, w, h)
+            }
+            if cls_name in REFERENCE_SIZES:
+                det["ref"] = REFERENCE_SIZES[cls_name]
+            all_detections.append(det)
+
+    if not all_detections:
+        return {
+            "error": "Nessun oggetto rilevato nella scena.",
+            "saved_path": saved_path,
+        }
+
+    # 4. Scegli l'oggetto target: il più grande per area del bbox (primo piano)
+    target = max(all_detections, key=lambda d: d["bbox"][2] * d["bbox"][3])
+    target_bbox = target["bbox"]  # (x, y, w, h)
+
+    # 5. Trova un oggetto di RIFERIMENTO (diverso dal target, nel dizionario)
+    ref_candidates = [d for d in all_detections if "ref" in d and d is not target]
+
+    # Se il target stesso è un oggetto di riferimento e non ci sono altri candidati,
+    # usa il target come riferimento di sé stesso
+    if not ref_candidates and "ref" in target:
+        ref_candidates = [target]
+
+    if not ref_candidates:
+        # Nessun riferimento disponibile, restituisci solo il bbox senza misure
+        return {
+            "target_name": target["name"],
+            "target_confidence": round(target["conf"], 2),
+            "bbox_x": round(target_bbox[0], 1),
+            "bbox_y": round(target_bbox[1], 1),
+            "bbox_w": round(target_bbox[2], 1),
+            "bbox_h": round(target_bbox[3], 1),
+            "saved_path": saved_path,
+            "error": "Oggetto rilevato ma nessun riferimento per calcolare le dimensioni reali. "
+                     "Disegna manualmente il riquadro e assicurati che ci sia un oggetto di riferimento.",
+        }
+
+    # Trova il riferimento più vicino al target
+    best_ref = min(ref_candidates, key=lambda d: distance_between_centers(target_bbox, d["bbox"]))
+
+    # 6. Calcola px/cm
+    ref_bbox_w = best_ref["bbox"][2]
+    ref_bbox_h = best_ref["bbox"][3]
+    ref_real_w = best_ref["ref"]["width"]
+    ref_real_h = best_ref["ref"]["height"]
+    px_per_cm_w = ref_bbox_w / ref_real_w
+    px_per_cm_h = ref_bbox_h / ref_real_h
+    px_per_cm = (px_per_cm_w + px_per_cm_h) / 2
+
+    # 7. Calcola dimensioni del target
+    target_w_cm = round(target_bbox[2] / px_per_cm, 1)
+    target_h_cm = round(target_bbox[3] / px_per_cm, 1)
+
+    # 8. Genera immagine annotata
+    ref_detections = [d for d in all_detections if "ref" in d]
+    annotated = draw_detections(img, ref_detections, target_bbox, best_ref)
+
+    return {
+        "width_cm": target_w_cm,
+        "height_cm": target_h_cm,
+        "target_name": target["name"],
+        "target_confidence": round(target["conf"], 2),
+        "bbox_x": round(target_bbox[0], 1),
+        "bbox_y": round(target_bbox[1], 1),
+        "bbox_w": round(target_bbox[2], 1),
+        "bbox_h": round(target_bbox[3], 1),
+        "reference_object": best_ref["name"],
+        "reference_confidence": round(best_ref["conf"], 2),
+        "all_detections": [
+            {"name": d["name"], "confidence": round(d["conf"], 2)} for d in ref_detections
+        ],
+        "annotated_image": encode_image(annotated),
+        "px_per_cm": round(px_per_cm, 4),
+        "saved_path": saved_path,
+    }
 
 
 @app.post("/measure")
