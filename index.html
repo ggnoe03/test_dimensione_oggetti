@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>ObjectMeter AR — Misura in Realtà Aumentata</title>
+  <meta name="description" content="Misura oggetti nel mondo reale usando la Realtà Aumentata direttamente dal browser.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="static/style.css">
+
+  <!-- Three.js via ES Module importmap -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+
+<body>
+
+  <!-- ── Start Screen ───────────────────────────────────────── -->
+  <div id="start-screen">
+    <header>
+      <div class="logo-icon">📐</div>
+      <h1>ObjectMeter <span class="ar-tag">AR</span></h1>
+    </header>
+
+    <main>
+      <div class="card hero-card">
+        <div class="hero-visual">
+          <div class="hero-icon-ring">
+            <span class="hero-icon">📱</span>
+          </div>
+        </div>
+
+        <h2>Misura in Realtà Aumentata</h2>
+        <p class="hero-desc">Punta la fotocamera su una superficie piana, tocca per posizionare i punti e misura
+          distanze reali in centimetri.</p>
+
+        <ol class="steps">
+          <li>
+            <span class="step-num">1</span>
+            <div>
+              <strong>Punto di partenza</strong>
+              <span class="step-detail">Tocca lo schermo per posizionare il primo punto</span>
+            </div>
+          </li>
+          <li>
+            <span class="step-num">2</span>
+            <div>
+              <strong>Punto di arrivo</strong>
+              <span class="step-detail">Tocca di nuovo per il secondo punto e leggi la misura</span>
+            </div>
+          </li>
+          <li>
+            <span class="step-num">3</span>
+            <div>
+              <strong>Ricomincia</strong>
+              <span class="step-detail">Tocca ancora per cancellare e misurare di nuovo</span>
+            </div>
+          </li>
+        </ol>
+
+        <button id="start-btn" class="btn-ar">
+          <span class="btn-ar-icon">🚀</span>
+          Avvia Fotocamera AR
+        </button>
+        <p id="status" class="status-msg"></p>
+      </div>
+    </main>
+  </div>
+
+  <!-- ── AR Overlay (visible during XR session) ─────────────── -->
+  <div id="overlay">
+    <!-- Top bar: measurement display -->
+    <div class="ar-top-bar">
+      <div class="measurement-badge" id="measurement">
+        <span class="meas-label">Misurazione</span>
+        <span class="meas-value" id="meas-value">— cm</span>
+      </div>
+    </div>
+
+    <!-- Bottom bar: instructions + exit -->
+    <div class="ar-bottom-bar">
+      <div class="ar-instruction" id="instruction">
+        <span class="instr-dot"></span>
+        Muovi il telefono per rilevare superfici
+      </div>
+      <button id="btn-exit-ar" class="btn-exit">✕ Esci dall'AR</button>
+    </div>
+  </div>
+
+  <script type="module" src="static/script.js"></script>
+</body>
+
+</html>
